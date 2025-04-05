@@ -2,19 +2,36 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Documents;
-using System.Windows.Media; // Use SWColor alias below
+using System.Windows; // For WPF types like Thickness, VerticalAlignment etc.
+using System.Windows.Controls; // For RichTextBox
+using System.Windows.Documents; // For TextRange, TextPointer
+using System.Windows.Media; // For Brushes, Color (SWColor alias)
 using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using SDColor = System.Drawing.Color; // Alias for System.Drawing.Color
-using SWColor = System.Windows.Media.Color; // Alias for System.Windows.Media.Color
+// using System.Windows.Shapes; // Can remove if Rectangle is always qualified, or keep if other shapes used
+using SDColor = System.Drawing.Color;
+using SWColor = System.Windows.Media.Color;
+// Need System.Drawing for Point and Rectangle used with ImageElement/Bitmap
+using System.Drawing; // Now includes Point and Rectangle
 
 namespace Match3Solver
 {
     public class UIFunctions
     {
+        private const int OVERLAY_START_X = 39 + (70 / 2);
+        private const int OVERLAY_START_Y = 90 + (70 / 2);
+        private const int OVERLAY_OFFSET_X = 70;
+        private const int OVERLAY_OFFSET_Y = 70;
+        private const int TAIL_OFFSET_X_RIGHT = 5;
+        private const int TAIL_OFFSET_X_LEFT = -5;
+        private const int TAIL_OFFSET_Y_UP = -5;
+        private const int TAIL_OFFSET_Y_DOWN = 5;
+        private const int TAIL_OFFSET_Y_HORIZONTAL = 0;
+        private const int TAIL_OFFSET_X_VERTICAL = 0;
+        private const int HEAD_OFFSET_X = 0;
+        private const int HEAD_OFFSET_Y = 0;
+        private const float ASSET_BASE_WIDTH = 1920.0f;
+
+        // --- End Calibration ---
         // --- Made internal for SolverUtils access ---
         internal Dictionary<int, SWColor> myColors = new Dictionary<int, SWColor> {
             { 0, SWColor.FromRgb(0xE9, 0xD0, 0x6C) /*Joy*/ }, { 1, SWColor.FromRgb(0x49, 0xBA, 0xC0) /*Sentiment*/ },
@@ -76,78 +93,56 @@ namespace Match3Solver
             return SDColor.FromArgb(mediaColor.A, mediaColor.R, mediaColor.G, mediaColor.B);
         }
 
-
-        // parseMovementAndDraw: Needs overlay calibration later
-        public Capture.Hook.Common.Overlay parseMovementAndDraw(SolverInterface.Movement command, int cellColor, int height, int width)
+        // parseMovementAndDraw: Uses calibrated constants
+        public Capture.Hook.Common.Overlay parseMovementAndDraw(SolverInterface.Movement command, int cellColorIndex, int height, int width)
         {
-            SDColor tint = SDColor.White; // System.Drawing.Color
-            switch (cellColor)
-            {
-                case 0: tint = SDColor.Yellow; break;
-                case 1: tint = SDColor.Cyan; break;
-                case 2: tint = SDColor.HotPink; break;
-                case 3: tint = SDColor.Orange; break;
-                case 4: tint = SDColor.DodgerBlue; break;
-                case 5: tint = SDColor.Red; break;
-                case 6: tint = SDColor.LimeGreen; break;
-                case 7: tint = SDColor.MediumPurple; break;
-                default: tint = SDColor.Black; break;
-            }
-
-            // --- !!! Needs HP1 Calibration !!! ---
-            int startX = (int)(width * 0.2961), startY = (int)(height * 0.12686), offset = (int)(0.04688 * width);
-            int dirOffX = command.isVertical ? (int)(-1 * (width * 0.0078125)) : (int)(width * 0.015625); int dirOffY = command.isVertical ? ((command.amount > 0) ? (int)(width * 0.01302083) : (int)(width * 0.015625)) : (int)(-1 * (width * 0.0052083));
-            int headOffX = command.isVertical ? 0 : ((command.amount > 0) ? (int)(-1 * (width * 0.049479167)) : (int)(width * 0.0018229167)); int headOffY = command.isVertical ? ((command.amount > 0) ? (int)(-1 * (width * 0.0489584)) : (int)(width * 0.002604167)) : ((command.amount > 0) ? (int)(width * 0.00078125) : 1);
-            // --- End Placeholder ---
+            // ... (This method should be fine after the previous fix for Point) ...
+            SDColor tint = SDColor.White;
+            if (myColors.ContainsKey(cellColorIndex)) { tint = MediaColorToDrawingColor(myColors[cellColorIndex]); } else { tint = myColors.ContainsKey(7) ? MediaColorToDrawingColor(myColors[7]) : SDColor.Black; }
 
             List<Capture.Hook.Common.IOverlayElement> elem = new List<Capture.Hook.Common.IOverlayElement>();
-            if (arrowTailV.ContainsKey(0) && arrowTailH.ContainsKey(0) && arrowHeadV.ContainsKey(0) && arrowHeadH.ContainsKey(0))
+            float scale = (float)(width / ASSET_BASE_WIDTH);
+
+            if (!arrowTailV.ContainsKey(0) || !arrowTailH.ContainsKey(0) || !arrowHeadV.ContainsKey(0) || !arrowHeadH.ContainsKey(0))
+            { return new Capture.Hook.Common.Overlay { Elements = elem, Hidden = true }; }
+
+            try
             {
-                int i = command.amount > 0 ? command.amount - 1 : command.amount + 1; while (i != 0) { int xOff = command.isVertical ? 0 : (command.amount > 0 ? i - 1 : i); int yOff = command.isVertical ? (command.amount > 0 ? i - 1 : i) : 0; elem.Add(new Capture.Hook.Common.ImageElement() { Location = new System.Drawing.Point((startX + (offset * command.xPos)) + (offset * xOff) + dirOffX, (startY + (offset * command.yPos)) + (offset * yOff) + dirOffY), Image = command.isVertical ? arrowTailV[0] : arrowTailH[0], Scale = (float)(width / 3840.0), Tint = tint }); if (command.amount > 0) i--; else i++; }
-                int finalX = command.isVertical ? command.xPos : command.xPos + command.amount; int finalY = command.isVertical ? command.yPos + command.amount : command.yPos; elem.Add(new Capture.Hook.Common.ImageElement() { Location = new System.Drawing.Point(startX + (offset * finalX) + dirOffX + headOffX, startY + (offset * finalY) + dirOffY + headOffY), Image = command.isVertical ? arrowHeadV[0] : arrowHeadH[0], Angle = (command.amount > 0 ? 3.14159f : 0.0f), Scale = (float)(width / 3840.0), Tint = tint });
+                int i = command.amount > 0 ? 1 : -1;
+                while ((command.amount > 0 && i < command.amount) || (command.amount < 0 && i > command.amount))
+                {
+                    int currentXOffsetPixels = 0; int currentYOffsetPixels = 0; int basePixelX = OVERLAY_START_X + (command.xPos * OVERLAY_OFFSET_X); int basePixelY = OVERLAY_START_Y + (command.yPos * OVERLAY_OFFSET_Y); int directionAdjustX = 0; int directionAdjustY = 0;
+                    if (command.isVertical) { currentYOffsetPixels = i * OVERLAY_OFFSET_Y; directionAdjustX = TAIL_OFFSET_X_VERTICAL; directionAdjustY = (command.amount > 0) ? TAIL_OFFSET_Y_DOWN : TAIL_OFFSET_Y_UP; } else { currentXOffsetPixels = i * OVERLAY_OFFSET_X; directionAdjustX = (command.amount > 0) ? TAIL_OFFSET_X_RIGHT : TAIL_OFFSET_X_LEFT; directionAdjustY = TAIL_OFFSET_Y_HORIZONTAL; }
+                    elem.Add(new Capture.Hook.Common.ImageElement() { Location = new System.Drawing.Point(basePixelX + currentXOffsetPixels + directionAdjustX, basePixelY + currentYOffsetPixels + directionAdjustY), Image = command.isVertical ? arrowTailV[0] : arrowTailH[0], Scale = scale, Tint = tint });
+                    if (command.amount > 0) i++; else i--;
+                }
+                int finalBaseX = OVERLAY_START_X + ((command.isVertical ? command.xPos : command.xPos + command.amount) * OVERLAY_OFFSET_X); int finalBaseY = OVERLAY_START_Y + ((command.isVertical ? command.yPos + command.amount : command.yPos) * OVERLAY_OFFSET_Y);
+                elem.Add(new Capture.Hook.Common.ImageElement() { Location = new System.Drawing.Point(finalBaseX + HEAD_OFFSET_X, finalBaseY + HEAD_OFFSET_Y), Image = command.isVertical ? arrowHeadV[0] : arrowHeadH[0], Angle = (command.amount > 0) ? 0.0f : 3.14159f, Scale = scale, Tint = tint });
+
             }
-            else { Console.WriteLine("Warning: Arrow overlay assets not loaded."); }
+            catch (Exception ex) { Console.WriteLine($"[ERROR] Exception during overlay element calculation: {ex.Message}"); return new Capture.Hook.Common.Overlay { Elements = new List<Capture.Hook.Common.IOverlayElement>(), Hidden = true }; }
             return new Capture.Hook.Common.Overlay { Elements = elem, Hidden = false };
         }
-
-        // initBoardDisplay: Uses 7x8 dimensions from parent
         public void initBoardDisplay()
         {
-            // Check if parent is null before accessing its properties
             if (parent == null) return;
-
             int xPos = 10, yPos = 10;
             // Clear previous grid elements if any
-            if (parent.boardDisplay != null && parent.boardDisplay.Length > 0 && parent.boardDisplay[0] != null && parent.boardDisplay[0].Length > 0 && parent.boardDisplay[0][0] != null)
-            {
-                for (int prevY = 0; prevY < parent.boardDisplay.Length; prevY++)
-                {
-                    if (parent.boardDisplay[prevY] == null) continue;
-                    for (int prevX = 0; prevX < parent.boardDisplay[prevY].Length; prevX++)
-                    {
-                        if (parent.boardDisplay[prevY][prevX] != null)
-                        {
-                            parent.mainGrid.Children.Remove(parent.boardDisplay[prevY][prevX]);
-                        }
-                    }
-                }
-            }
-            // Re-initialize the array
-            parent.boardDisplay = new Rectangle[parent.length][]; // Use parent's length (7)
+            if (parent.boardDisplay?.Length > 0 && parent.boardDisplay[0]?.Length > 0 && parent.boardDisplay[0][0] != null) { for (int prevY = 0; prevY < parent.boardDisplay.Length; prevY++) { if (parent.boardDisplay[prevY] == null) continue; for (int prevX = 0; prevX < parent.boardDisplay[prevY].Length; prevX++) { if (parent.boardDisplay[prevY][prevX] != null) { parent.mainGrid.Children.Remove(parent.boardDisplay[prevY][prevX]); } } } }
+
+            // Re-initialize the array with explicitly qualified type
+            parent.boardDisplay = new System.Windows.Shapes.Rectangle[parent.length][];
 
             for (int y = 0; y < parent.length; y++)
-            { // Loop 0-6
-                parent.boardDisplay[y] = new Rectangle[parent.width]; // Use parent's width (8)
+            {
+                // Explicitly qualify type
+                parent.boardDisplay[y] = new System.Windows.Shapes.Rectangle[parent.width];
                 xPos = 10;
                 for (int x = 0; x < parent.width; x++)
-                { // Loop 0-7
-                    SWColor c = myColors.ContainsKey(9) ? myColors[9] : SWColor.FromRgb(128, 128, 128); // Default Gray
-                    // Check parent.board initialization before accessing
-                    if (parent.board != null && y < parent.board.Length && parent.board[y] != null && x < parent.board[y].Length)
-                    {
-                        int tv = parent.board[y][x] % 10; // Get base tile type
-                        if (myColors.ContainsKey(tv)) c = myColors[tv];
-                    }
+                {
+                    SWColor c = myColors.ContainsKey(9) ? myColors[9] : SWColor.FromRgb(128, 128, 128);
+                    if (parent.board?.Length > y && parent.board[y]?.Length > x) { int tv = parent.board[y][x] % 10; if (myColors.ContainsKey(tv)) c = myColors[tv]; }
+                    // createRectangle returns the correct type now
                     parent.boardDisplay[y][x] = createRectangle(xPos, yPos, c);
                     parent.mainGrid.Children.Add(parent.boardDisplay[y][x]);
                     xPos += parent.boxSize;
@@ -156,18 +151,18 @@ namespace Match3Solver
             }
         }
 
-        // createRectangle: Uses SWColor, returns Shapes.Rectangle
-        private Rectangle createRectangle(int xPos, int yPos, SWColor color)
+        // createRectangle: Return type MUST be System.Windows.Shapes.Rectangle for WPF UI
+        private System.Windows.Shapes.Rectangle createRectangle(int xPos, int yPos, SWColor color)
         {
-            // Check if parent is null before accessing boxSize
-            int currentBoxSize = (parent != null) ? parent.boxSize : 30; // Default size if parent is null
+            int currentBoxSize = (parent != null) ? parent.boxSize : 30;
 
-            Rectangle rect = new Rectangle();
+            // Explicitly qualify Rectangle type
+            System.Windows.Shapes.Rectangle rect = new System.Windows.Shapes.Rectangle();
             rect.Fill = new SolidColorBrush(color);
             rect.VerticalAlignment = VerticalAlignment.Top;
             rect.HorizontalAlignment = HorizontalAlignment.Left;
             rect.Margin = new Thickness(xPos, yPos, 0, 0);
-            rect.Stroke = new SolidColorBrush(SWColor.FromRgb(0, 0, 0)); // Black
+            rect.Stroke = new SolidColorBrush(SWColor.FromRgb(0, 0, 0));
             rect.Height = currentBoxSize;
             rect.Width = currentBoxSize;
             return rect;
@@ -176,33 +171,60 @@ namespace Match3Solver
         // drawBoard: Uses 7x8 dimensions, uses myColors
         public void drawBoard(int[][] board)
         {
-            // Check if parent is null
             if (parent == null || parent.boardDisplay == null) return;
 
             for (int y = 0; y < parent.length; y++)
-            { // Loop 0-6
-              // Check if row exists
+            {
                 if (parent.boardDisplay[y] == null) continue;
-
                 for (int x = 0; x < parent.width; x++)
-                { // Loop 0-7
-                  // Check if element exists
-                    if (parent.boardDisplay[y][x] != null)
+                {
+                    if (parent.boardDisplay[y][x] != null) // Accessing the WPF Rectangle
                     {
-                        int tv = 9; // Default unknown
-                        // Check board bounds carefully
-                        if (board != null && y < board.Length && board[y] != null && x < board[y].Length)
-                        {
-                            tv = board[y][x] % 10;
-                        }
-                        parent.boardDisplay[y][x].Fill = new SolidColorBrush(myColors.ContainsKey(tv) ? myColors[tv] : SWColor.FromRgb(128, 128, 128)); // Use SWColor
+                        int tv = 9;
+                        if (board?.Length > y && board[y]?.Length > x) { tv = board[y][x] % 10; }
+                        // Assign SolidColorBrush to Fill property
+                        parent.boardDisplay[y][x].Fill = new SolidColorBrush(myColors.ContainsKey(tv) ? myColors[tv] : SWColor.FromRgb(128, 128, 128));
                     }
                 }
             }
         }
 
-        // highLightMode: No changes needed
-        public void highLightMode(String s, RichTextBox r, RichTextBox o) { var t2 = new TextRange(o.Document.ContentStart, o.Document.ContentEnd); t2.ApplyPropertyValue(TextElement.FontWeightProperty, FontWeights.Normal); t2.ApplyPropertyValue(TextElement.ForegroundProperty, Brushes.Black); var t = new TextRange(r.Document.ContentStart, r.Document.ContentEnd); var c = t.Start.GetInsertionPosition(LogicalDirection.Forward); t.ApplyPropertyValue(TextElement.FontWeightProperty, FontWeights.Normal); t.ApplyPropertyValue(TextElement.ForegroundProperty, Brushes.Black); while (c != null) { string tr = c.GetTextInRun(LogicalDirection.Forward); if (!string.IsNullOrWhiteSpace(tr)) { int i = tr.IndexOf(s); if (i != -1) { var ss = c.GetPositionAtOffset(i, LogicalDirection.Forward); var se = ss.GetPositionAtOffset(s.Length, LogicalDirection.Forward); var sel = new TextRange(ss, se); sel.Text = s; sel.ApplyPropertyValue(TextElement.FontWeightProperty, FontWeights.Bold); sel.ApplyPropertyValue(TextElement.ForegroundProperty, Brushes.Red); r.Selection.Select(sel.Start, sel.End); r.Focus(); } } c = c.GetNextContextPosition(LogicalDirection.Forward); } }
+        // highLightMode: Needs System.Windows.Media.Brushes
+        public void highLightMode(String s, RichTextBox r, RichTextBox o)
+        {
+            var t2 = new TextRange(o.Document.ContentStart, o.Document.ContentEnd);
+            t2.ApplyPropertyValue(TextElement.FontWeightProperty, FontWeights.Normal);
+            // --- FIX: Explicitly use System.Windows.Media.Brushes ---
+            t2.ApplyPropertyValue(TextElement.ForegroundProperty, System.Windows.Media.Brushes.Black);
+
+            var t = new TextRange(r.Document.ContentStart, r.Document.ContentEnd);
+            var c = t.Start.GetInsertionPosition(LogicalDirection.Forward);
+            t.ApplyPropertyValue(TextElement.FontWeightProperty, FontWeights.Normal);
+            // --- FIX: Explicitly use System.Windows.Media.Brushes ---
+            t.ApplyPropertyValue(TextElement.ForegroundProperty, System.Windows.Media.Brushes.Black);
+
+            while (c != null)
+            {
+                string tr = c.GetTextInRun(LogicalDirection.Forward);
+                if (!string.IsNullOrWhiteSpace(tr))
+                {
+                    int i = tr.IndexOf(s);
+                    if (i != -1)
+                    {
+                        var ss = c.GetPositionAtOffset(i, LogicalDirection.Forward);
+                        var se = ss.GetPositionAtOffset(s.Length, LogicalDirection.Forward);
+                        var sel = new TextRange(ss, se);
+                        sel.Text = s;
+                        sel.ApplyPropertyValue(TextElement.FontWeightProperty, FontWeights.Bold);
+                        // --- FIX: Explicitly use System.Windows.Media.Brushes ---
+                        sel.ApplyPropertyValue(TextElement.ForegroundProperty, System.Windows.Media.Brushes.Red);
+                        r.Selection.Select(sel.Start, sel.End);
+                        r.Focus();
+                    }
+                }
+                c = c.GetNextContextPosition(LogicalDirection.Forward);
+            }
+        }
 
     } // End Class
 } // End Namespace
