@@ -292,13 +292,18 @@ namespace Match3Solver
 
                                     resultListView.IsEnabled = results != null && results.Count > 0; // Enable list only if results exist
 
-                                    // Final status update
                                     if (!createMask)
                                     {
                                         statusText.Foreground = System.Windows.Media.Brushes.Green;
-                                        statusText.Text = $"Done! Found {results?.Count ?? 0} possible moves.";
+                                        if (results.Count > 0)
+                                        {
+                                            statusText.Text = $"Done! Best move highlighted in list ({results.Count} total).";
+                                        }
+                                        else
+                                        {
+                                            statusText.Text = "Done! No possible moves found.";
+                                        }
                                     }
-
                                 }));
 
                             } // screenshot is disposed here automatically by 'using'
@@ -315,29 +320,27 @@ namespace Match3Solver
         }
         private void DrawSelectedOverlay()
         {
+            // --- OPTIONAL: Comment out contents for PURE Option 1 ---
             if (hook.hooked && results != null && results.Count > selectedIndex && selectedIndex >= 0)
             {
-                // Check if board state is valid for the selected move index
                 var selectedMove = results[selectedIndex];
                 if (selectedMove.yPos >= 0 && selectedMove.yPos < board.Length &&
                     selectedMove.xPos >= 0 && selectedMove.xPos < board[selectedMove.yPos].Length)
                 {
                     int tileColorIndex = board[selectedMove.yPos][selectedMove.xPos];
+                    // Use the Text Overlay version for now if uncommented
                     var overlay = draw.parseMovementAndDraw(selectedMove, tileColorIndex, lastScreenHeight, lastScreenWidth);
                     hook.drawOverlay(overlay);
+                    Console.WriteLine($"DrawSelectedOverlay: Drawing text overlay for index {selectedIndex}.");
                 }
-                else
-                {
-                    Console.WriteLine($"[WARN] Invalid board coordinates for selected move index {selectedIndex}: ({selectedMove.yPos},{selectedMove.xPos})");
-                    // Optionally clear the overlay if the index is bad
-                    // hook.drawOverlay(new Capture.Hook.Common.Overlay { Elements = new List<Capture.Hook.Common.IOverlayElement>(), Hidden = true });
-                }
+                else { Console.WriteLine($"[WARN] DrawSelectedOverlay: Invalid board coordinates for index {selectedIndex}"); }
             }
             else if (hook.hooked)
             {
-                // Clear overlay if no results or invalid index
-                hook.drawOverlay(new Capture.Hook.Common.Overlay { Elements = new List<Capture.Hook.Common.IOverlayElement>(), Hidden = true });
+                hook.drawOverlay(new Capture.Hook.Common.Overlay { Elements = new List<Capture.Hook.Common.IOverlayElement>(), Hidden = true }); // Clear overlay
+                Console.WriteLine($"DrawSelectedOverlay: Clearing overlay.");
             }
+            // --- END OPTIONAL ---
         }
 
         // OnClosed remains the same
@@ -350,31 +353,44 @@ namespace Match3Solver
         private void updateResultView(List<SolverInterface.Movement> res) { updateResultView(res, lastScreenHeight, lastScreenWidth); }
         private void updateResultView(List<SolverInterface.Movement> inList, int h, int w)
         {
-            if (inList == null) // Handle null list gracefully
+            // Clear previous results
+            resultListView.Items.Clear();
+
+            if (inList == null || inList.Count == 0) // Handle null or empty list gracefully
             {
-                resultListView.Items.Clear();
+                results = new List<SolverInterface.Movement>(); // Ensure results is an empty list, not null
+                selectedIndex = -1; // No item to select
                 resultListView.IsEnabled = false;
-                return;
+                Console.WriteLine("updateResultView: No results to display.");
+                return; // Nothing more to do
             }
 
-            resultListView.Items.Clear();
-            // Ensure sortList returns a valid list, even if empty
+            // Sort the list to get the best move at index 0
+            // Ensure sortList returns a valid list, even if empty (though we checked above)
             results = solver.sortList(inList, sortingMode) ?? new List<SolverInterface.Movement>();
+            Console.WriteLine($"updateResultView: Sorted {results.Count} results using mode {sortingMode}.");
 
-            // --- Results view update (solving disabled, so this might not run) ---
+            // Populate the ListView
+            results.ForEach(r => resultListView.Items.Add(new resultItem(r)));
+
+            // --- OPTION 1 IMPLEMENTATION ---
             if (results.Count > 0)
             {
-                results.ForEach(r => resultListView.Items.Add(new resultItem(r))); // Uses updated resultItem
-                selectedIndex = 0;
-                resultListView.SelectedIndex = 0;
-                resultListView.ScrollIntoView(resultListView.Items.GetItemAt(selectedIndex));
-                // If overlays are desired later, draw the first result:
+                selectedIndex = 0;                     // Set internal index tracking the selection
+                resultListView.SelectedIndex = 0;      // Select the first item visually in the list
+                resultListView.ScrollIntoView(resultListView.Items.GetItemAt(0)); // Scroll the view to the selected item
+                resultListView.IsEnabled = true;       // Enable the list for interaction
+                Console.WriteLine($"updateResultView: Selected and scrolled to index 0.");
+
+                // --- CRITICAL: REMOVE or COMMENT OUT the automatic overlay call for the best move ---
                 // hook.drawOverlay(draw.parseMovementAndDraw(results[0], board[results[0].yPos][results[0].xPos], h, w));
-                resultListView.IsEnabled = true;
+                // Console.WriteLine($"updateResultView: Skipped automatic overlay draw for Option 1."); // Optional log
             }
-            else
+            else // Should not happen due to earlier check, but good practice
             {
-                resultListView.IsEnabled = false; // Disable if no results
+                selectedIndex = -1;
+                resultListView.IsEnabled = false;
+                Console.WriteLine("updateResultView: Results list became empty after processing.");
             }
         }
 
