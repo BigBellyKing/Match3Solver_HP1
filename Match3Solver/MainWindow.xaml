@@ -1,0 +1,262 @@
+﻿<!-- FILE: Match3Solver/MainWindow.xaml -->
+<Window x:Name="mainWindow" x:Class="Match3Solver.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Match3Solver"
+        mc:Ignorable="d"
+        Title="HuniePop 1 Solver" Height="471.778" Width="1008.872" Icon="Icon.png">
+    <!-- === MAKE SURE THIS ENTIRE RESOURCES SECTION IS PRESENT === -->
+    <Window.Resources>
+        <local:CutoffConverter x:Key="ValueConverter" Cutoff="0" />
+
+        <!-- Styles for HP1 Tiles -->
+        <Style x:Key="JoyStyle" TargetType="TextBlock">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding sJoy, Converter={StaticResource ValueConverter}}" Value="True">
+                    <Setter Property="Background" Value="Yellow" />
+                    <Setter Property="Foreground" Value="Black" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="SentimentStyle" TargetType="TextBlock">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding sSentiment, Converter={StaticResource ValueConverter}}" Value="True">
+                    <Setter Property="Background" Value="Cyan" />
+                    <Setter Property="Foreground" Value="Black" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="PassionStyle" TargetType="TextBlock">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding sPassion, Converter={StaticResource ValueConverter}}" Value="True">
+                    <Setter Property="Background" Value="HotPink" />
+                    <Setter Property="Foreground" Value="Black" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="RomanceStyle" TargetType="TextBlock">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding sRomance, Converter={StaticResource ValueConverter}}" Value="True">
+                    <Setter Property="Background" Value="Orange" />
+                    <Setter Property="Foreground" Value="Black" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="TalentStyle" TargetType="TextBlock">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding sTalent, Converter={StaticResource ValueConverter}}" Value="True">
+                    <Setter Property="Background" Value="DodgerBlue" />
+                    <Setter Property="Foreground" Value="White" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="SexualityStyle" TargetType="TextBlock">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding sSexuality, Converter={StaticResource ValueConverter}}" Value="True">
+                    <Setter Property="Background" Value="Red" />
+                    <Setter Property="Foreground" Value="White" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="FlirtationStyle" TargetType="TextBlock">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding sFlirtation, Converter={StaticResource ValueConverter}}" Value="True">
+                    <Setter Property="Background" Value="LimeGreen" />
+                    <Setter Property="Foreground" Value="Black" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="BrokenHeartStyle" TargetType="TextBlock">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding sBrokenHeart, Converter={StaticResource ValueConverter}}" Value="True">
+                    <Setter Property="Background" Value="MediumPurple" />
+                    <Setter Property="Foreground" Value="White" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <!-- StaminaStyle is no longer needed -->
+
+        <!-- DataTemplates for HP1 Tiles -->
+        <DataTemplate x:Key="JoyCell">
+            <DockPanel>
+                <TextBlock Style="{StaticResource JoyStyle}" HorizontalAlignment="Center" TextAlignment="Center" Width="25" Margin="0" Text="{Binding sJoy}"/>
+            </DockPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="SentimentCell">
+            <DockPanel>
+                <TextBlock Style="{StaticResource SentimentStyle}" HorizontalAlignment="Center" TextAlignment="Center" Width="23" Margin="0" Text="{Binding sSentiment}"/>
+            </DockPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="PassionCell">
+            <DockPanel>
+                <TextBlock Style="{StaticResource PassionStyle}" HorizontalAlignment="Center" TextAlignment="Center" Width="28" Margin="0" Text="{Binding sPassion}"/>
+            </DockPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="RomanceCell">
+            <DockPanel>
+                <TextBlock Style="{StaticResource RomanceStyle}" HorizontalAlignment="Center" TextAlignment="Center" Width="24" Margin="0" Text="{Binding sRomance}"/>
+            </DockPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="TalentCell">
+            <DockPanel>
+                <TextBlock Style="{StaticResource TalentStyle}" HorizontalAlignment="Center" TextAlignment="Center" Width="23" Margin="0" Text="{Binding sTalent}"/>
+            </DockPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="SexualityCell">
+            <DockPanel>
+                <TextBlock Style="{StaticResource SexualityStyle}" HorizontalAlignment="Center" TextAlignment="Center" Width="21" Margin="0" Text="{Binding sSexuality}"/>
+            </DockPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="FlirtationCell">
+            <DockPanel>
+                <TextBlock Style="{StaticResource FlirtationStyle}" HorizontalAlignment="Center" TextAlignment="Center" Width="26" Margin="0" Text="{Binding sFlirtation}"/>
+            </DockPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="BrokenHeartCell">
+            <DockPanel>
+                <TextBlock Style="{StaticResource BrokenHeartStyle}" HorizontalAlignment="Center" TextAlignment="Center" Width="34" Margin="0" Text="{Binding sBrokenHeart}"/>
+            </DockPanel>
+        </DataTemplate>
+        <!-- StaminaCell template is no longer needed -->
+
+        <!-- Templates for Non-Score Columns (These MUST exist) -->
+        <DataTemplate x:Key="PositionCell">
+            <DockPanel>
+                <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Width="28" Margin="0" Text="{Binding Position}"/>
+            </DockPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="DirectCell">
+            <DockPanel>
+                <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Width="32" Margin="0" Text="{Binding Direction}"/>
+            </DockPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="TileCell">
+            <DockPanel>
+                <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Width="28" Margin="0" Text="{Binding Amount}"/>
+            </DockPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="ChainCell">
+            <DockPanel>
+                <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Width="28" Margin="0" Text="{Binding Chain}"/>
+            </DockPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="CostCell">
+            <DockPanel>
+                <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Width="24" Margin="0" Text="{Binding StaminaCost}"/>
+            </DockPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="TotalCell">
+            <DockPanel>
+                <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Width="26" Margin="0" Text="{Binding TotalWBroken}"/>
+            </DockPanel>
+        </DataTemplate>
+        <!-- Raw Gain -->
+        <DataTemplate x:Key="TotBrokenCell">
+            <DockPanel>
+                <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Width="38" Margin="0" Text="{Binding Total}"/>
+            </DockPanel>
+        </DataTemplate>
+        <!-- Net Score -->
+    </Window.Resources>
+    <!-- === END RESOURCES SECTION === -->
+
+    <Grid x:Name="mainGrid">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="811*"/>
+            <ColumnDefinition Width="126*"/>
+        </Grid.ColumnDefinitions>
+        <ListView x:Name="resultListView" Margin="300,10,11.666,9.667" SelectionChanged="resultListView_SelectionChanged" Grid.ColumnSpan="2" IsEnabled="False">
+            <ListView.View>
+                <GridView x:Name="resultGridView">
+                    <!-- Non-score columns -->
+                    <GridViewColumn Header="Pos(Y,X)" CellTemplate="{StaticResource PositionCell}" />
+                    <GridViewColumn Header="Dir" CellTemplate="{StaticResource DirectCell}" />
+                    <GridViewColumn Header="Dist" CellTemplate="{StaticResource TileCell}" />
+                    <GridViewColumn Header="Chain" CellTemplate="{StaticResource ChainCell}" />
+                    <GridViewColumn Header="Cost" CellTemplate="{StaticResource CostCell}" />
+                    <GridViewColumn Header="Raw" CellTemplate="{StaticResource TotalCell}" />
+                    <GridViewColumn Header="Net" CellTemplate="{StaticResource TotBrokenCell}" />
+                    <!-- HP1 Score Columns (Stamina Removed) -->
+                    <GridViewColumn Header="Passion" CellTemplate="{StaticResource PassionCell}"/>
+                    <GridViewColumn Header="Joy" CellTemplate="{StaticResource JoyCell}"/>
+                    <GridViewColumn Header="Sentiment" CellTemplate="{StaticResource SentimentCell}" />
+                    <GridViewColumn Header="Romance" CellTemplate="{StaticResource RomanceCell}"/>
+                    <GridViewColumn Header="Talent" CellTemplate="{StaticResource TalentCell}" />
+                    <GridViewColumn Header="Sexuality" CellTemplate="{StaticResource SexualityCell}" />
+                    <GridViewColumn Header="Flirtation" CellTemplate="{StaticResource FlirtationCell}" />
+                    <GridViewColumn Header="BrknHrt" CellTemplate="{StaticResource BrokenHeartCell}"/>
+                </GridView>
+            </ListView.View>
+        </ListView>
+
+        <TextBlock x:Name="statusText" HorizontalAlignment="Left" Margin="10,222,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="285" Text="Waiting for HuniePop."/>
+
+        <!-- Help Text (Stamina Removed) -->
+        <RichTextBox x:Name="leftTextBox" HorizontalAlignment="Left" Height="134" Margin="10,243,0,0" VerticalAlignment="Top" Width="134" Block.LineHeight="1" FontSize="11.5" IsEnabled="False">
+            <FlowDocument>
+                <Paragraph>
+                    <Run Text="Controls"/>
+                </Paragraph>
+                <Paragraph>
+                    <Run Text="Ctrl + Alt + :"/>
+                </Paragraph>
+                <Paragraph>
+                    <Run Text="C - Capture Board"/>
+                </Paragraph>
+                <Paragraph>
+                    <Run Text="1 - Chain First"/>
+                </Paragraph>
+                <Paragraph>
+                    <Run Text="2 - Net Score First"/>
+                </Paragraph>
+                <Paragraph>
+                    <Run Text="3 - 4/5 Match First"/>
+                </Paragraph>
+                <Paragraph>
+                    <Run Text="4 - Passion First"/>
+                </Paragraph>
+                <Paragraph>
+                    <Run Text="5 - Joy First"/>
+                </Paragraph>
+            </FlowDocument>
+        </RichTextBox>
+        <RichTextBox x:Name="rightTextBox" HorizontalAlignment="Left" Height="134" Margin="149,243,0,0" VerticalAlignment="Top" Width="146" Block.LineHeight="1" FontSize="11.5" IsEnabled="False">
+            <FlowDocument>
+                <Paragraph>
+                    <Run/>
+                </Paragraph>
+                <Paragraph>
+                    <Run Text="6 - Sentiment First"/>
+                </Paragraph>
+                <Paragraph>
+                    <Run Text="7 - Talent First"/>
+                </Paragraph>
+                <Paragraph>
+                    <Run Text="8 - Flirtation First"/>
+                </Paragraph>
+                <Paragraph>
+                    <Run Text="9 - Romance First"/>
+                </Paragraph>
+                <Paragraph>
+                    <Run Text="0 - Sexuality First"/>
+                </Paragraph>
+                <Paragraph>
+                    <Run Text="+ - Broken Heart First"/>
+                </Paragraph>
+                <Paragraph>
+                    <Run Text="- - (Unused)"/>
+                </Paragraph>
+            </FlowDocument>
+        </RichTextBox>
+
+        <RichTextBox x:Name="leftTextBox_Copy" HorizontalAlignment="Left" Margin="10,382,0,10.667" Width="285" Block.LineHeight="1" FontSize="11.5" IsEnabled="False">
+            <FlowDocument>
+                <Paragraph>
+                    <Run Text="Ctrl + Alt + Up/Down - Scroll Result In-game"/>
+                </Paragraph>
+            </FlowDocument>
+        </RichTextBox>
+    </Grid>
+</Window>
