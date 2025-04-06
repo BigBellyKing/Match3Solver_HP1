@@ -683,83 +683,96 @@ namespace Match3Solver
         {
             if (results == null) return new List<SolverInterface.Movement>();
 
+            // --- MODIFICATION START ---
+            // Apply more explicit BrokenHeart penalization in secondary sorts for modes 1, 3-10
             switch (sortingMode)
             {
                 case 1: // Chain First
                     return results.OrderByDescending(m => m.score.chains)
-                                  .ThenByDescending(m => m.score.getTotal()) // Net score as secondary
-                                  .ThenByDescending(m => m.score.Joy)       // Joy as tertiary (HP1 specific)
+                                  .ThenBy(m => m.score.BrokenHeart) // Penalize broken hearts sooner (lower is better)
+                                  .ThenByDescending(m => m.score.getTotalNoBroken()) // Then by raw gain
+                                  .ThenByDescending(m => m.score.Joy) // Use specific tiles as tie-breakers
                                   .ThenByDescending(m => m.score.Passion)
                                   .ToList();
                 case 2: // Net Score First
+                        // Keep original logic: Net score inherently prioritizes fewer broken hearts.
                     return results.OrderByDescending(m => m.score.getTotal())
                                   .ThenByDescending(m => m.score.chains)
                                   .ThenByDescending(m => m.score.Joy)
                                   .ThenByDescending(m => m.score.Passion)
                                   .ToList();
-                case 3: // 4/5 Match First (using staminaCost as proxy for # matched)
-                    // Use customCompare for 'amount matched' (staminaCost proxy)
-                    return results.OrderByDescending(m => m.score.staminaCost, new customCompare())
+                case 3: // 4/5 Match First (using Amount as proxy now)
+                    return results.OrderByDescending(m => Math.Abs(m.amount)) // Higher amount (distance) first
                                   .ThenByDescending(m => m.score.chains)
-                                  .ThenByDescending(m => m.score.getTotal())
+                                  .ThenBy(m => m.score.BrokenHeart) // Penalize broken hearts
+                                  .ThenByDescending(m => m.score.getTotalNoBroken()) // Then raw gain
                                   .ThenByDescending(m => m.score.Joy)
                                   .ThenByDescending(m => m.score.Passion)
                                   .ToList();
                 case 4: // Passion First
                     return results.OrderByDescending(m => m.score.Passion, new customCompare())
                                   .ThenByDescending(m => m.score.chains)
-                                  .ThenByDescending(m => m.score.getTotal())
+                                  .ThenBy(m => m.score.BrokenHeart) // Penalize broken hearts
+                                  .ThenByDescending(m => m.score.getTotalNoBroken()) // Then raw gain
                                   .ThenByDescending(m => m.score.Joy)
                                   .ToList();
                 case 5: // Joy First
                     return results.OrderByDescending(m => m.score.Joy, new customCompare())
                                   .ThenByDescending(m => m.score.chains)
-                                  .ThenByDescending(m => m.score.getTotal())
+                                  .ThenBy(m => m.score.BrokenHeart) // Penalize broken hearts
+                                  .ThenByDescending(m => m.score.getTotalNoBroken()) // Then raw gain
                                   .ThenByDescending(m => m.score.Passion)
                                   .ToList();
                 case 6: // Sentiment First
                     return results.OrderByDescending(m => m.score.Sentiment, new customCompare())
                                   .ThenByDescending(m => m.score.chains)
-                                  .ThenByDescending(m => m.score.getTotal())
+                                  .ThenBy(m => m.score.BrokenHeart) // Penalize broken hearts
+                                  .ThenByDescending(m => m.score.getTotalNoBroken()) // Then raw gain
                                   .ThenByDescending(m => m.score.Joy).ThenByDescending(m => m.score.Passion)
                                   .ToList();
                 case 7: // Talent First
                     return results.OrderByDescending(m => m.score.Talent, new customCompare())
                                   .ThenByDescending(m => m.score.chains)
-                                  .ThenByDescending(m => m.score.getTotal())
+                                  .ThenBy(m => m.score.BrokenHeart) // Penalize broken hearts
+                                  .ThenByDescending(m => m.score.getTotalNoBroken()) // Then raw gain
                                   .ThenByDescending(m => m.score.Joy).ThenByDescending(m => m.score.Passion)
                                   .ToList();
                 case 8: // Flirtation First
                     return results.OrderByDescending(m => m.score.Flirtation, new customCompare())
                                   .ThenByDescending(m => m.score.chains)
-                                  .ThenByDescending(m => m.score.getTotal())
+                                  .ThenBy(m => m.score.BrokenHeart) // Penalize broken hearts
+                                  .ThenByDescending(m => m.score.getTotalNoBroken()) // Then raw gain
                                   .ThenByDescending(m => m.score.Joy).ThenByDescending(m => m.score.Passion)
                                   .ToList();
                 case 9: // Romance First
                     return results.OrderByDescending(m => m.score.Romance, new customCompare())
                                   .ThenByDescending(m => m.score.chains)
-                                  .ThenByDescending(m => m.score.getTotal())
+                                  .ThenBy(m => m.score.BrokenHeart) // Penalize broken hearts
+                                  .ThenByDescending(m => m.score.getTotalNoBroken()) // Then raw gain
                                   .ThenByDescending(m => m.score.Joy).ThenByDescending(m => m.score.Passion)
                                   .ToList();
                 case 10: // Sexuality First
                     return results.OrderByDescending(m => m.score.Sexuality, new customCompare())
                                   .ThenByDescending(m => m.score.chains)
-                                  .ThenByDescending(m => m.score.getTotal())
+                                  .ThenBy(m => m.score.BrokenHeart) // Penalize broken hearts
+                                  .ThenByDescending(m => m.score.getTotalNoBroken()) // Then raw gain
                                   .ThenByDescending(m => m.score.Joy).ThenByDescending(m => m.score.Passion)
                                   .ToList();
-                case 11: // Unused (was Stamina) - Maybe sort by Raw Gain?
+                case 11: // Unused (was Stamina) -> Raw Gain
+                         // Keep original: This mode INTENTIONALLY ignores broken hearts for primary sort.
+                         // Net score (which includes broken hearts) is only tertiary.
                     Console.WriteLine("Sorting Mode 11 (Raw Gain) selected.");
-                    return results.OrderByDescending(m => m.score.getTotalNoBroken()) // Raw score
-                                 .ThenByDescending(m => m.score.chains)
-                                 .ThenByDescending(m => m.score.getTotal()) // Net as secondary
-                                 .ThenByDescending(m => m.score.Joy)
-                                 .ThenByDescending(m => m.score.Passion)
-                                 .ToList();
+                    return results.OrderByDescending(m => m.score.getTotalNoBroken()) // Raw score first
+                                  .ThenByDescending(m => m.score.chains)
+                                  .ThenByDescending(m => m.score.getTotal()) // Net as tertiary (penalizes broken hearts here)
+                                  .ThenByDescending(m => m.score.Joy)
+                                  .ThenByDescending(m => m.score.Passion)
+                                  .ToList();
                 case 12: // Broken Heart First (Lowest is best)
-                         // Use customCompareBroken to prioritize non-zero broken hearts, but sort ascendingly
+                         // Keep original logic: Prioritizes avoiding broken hearts.
                     return results.OrderBy(m => m.score.BrokenHeart, new customCompareBrokenAsc()) // Sort ascending for broken hearts
                                   .ThenByDescending(m => m.score.chains)
-                                  .ThenByDescending(m => m.score.getTotal()) // Higher net score better when broken hearts are equal
+                                  .ThenByDescending(m => m.score.getTotalNoBroken()) // Use raw gain as secondary tie-breaker
                                   .ThenByDescending(m => m.score.Joy)
                                   .ThenByDescending(m => m.score.Passion)
                                   .ToList();
@@ -767,6 +780,7 @@ namespace Match3Solver
                     Console.WriteLine($"Warning: Unknown sortingMode {sortingMode}. Defaulting to Chain First.");
                     goto case 1; // Default to Chain First
             }
+            // --- MODIFICATION END ---
         }
 
         // --- Restore getBoardHash ---
