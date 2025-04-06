@@ -320,27 +320,51 @@ namespace Match3Solver
         }
         private void DrawSelectedOverlay()
         {
-            // --- OPTIONAL: Comment out contents for PURE Option 1 ---
+            // Check if hooked, results exist, and selectedIndex is valid
             if (hook.hooked && results != null && results.Count > selectedIndex && selectedIndex >= 0)
             {
                 var selectedMove = results[selectedIndex];
+
+                // --- ADDED: Board boundary check before accessing board[][] ---
                 if (selectedMove.yPos >= 0 && selectedMove.yPos < board.Length &&
-                    selectedMove.xPos >= 0 && selectedMove.xPos < board[selectedMove.yPos].Length)
+                    selectedMove.xPos >= 0 && selectedMove.xPos < (board[selectedMove.yPos]?.Length ?? 0)) // Added null check for board[yPos]
                 {
-                    int tileColorIndex = board[selectedMove.yPos][selectedMove.xPos];
-                    // Use the Text Overlay version for now if uncommented
+                    // Get the *original* tile type at the starting position for coloring the text/overlay
+                    // Note: This uses the 'board' variable which *should* hold the state *before* the move simulation.
+                    //       Make sure 'board' is correctly updated after parsing in the VK_C handler.
+                    int tileColorIndex = 9; // Default to unknown
+                    if (board[selectedMove.yPos] != null) // Check inner array again just in case
+                    {
+                        tileColorIndex = board[selectedMove.yPos][selectedMove.xPos];
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[WARN] DrawSelectedOverlay: board[{selectedMove.yPos}] is null. Cannot get tile color.");
+                    }
+
+
+                    // Call UIFunctions to create the overlay object
                     var overlay = draw.parseMovementAndDraw(selectedMove, tileColorIndex, lastScreenHeight, lastScreenWidth);
+
+                    // Send the overlay to the hook for drawing
                     hook.drawOverlay(overlay);
-                    Console.WriteLine($"DrawSelectedOverlay: Drawing text overlay for index {selectedIndex}.");
+                    Console.WriteLine($"DrawSelectedOverlay: Drawing overlay for index {selectedIndex}. Tile type: {tileColorIndex}");
                 }
-                else { Console.WriteLine($"[WARN] DrawSelectedOverlay: Invalid board coordinates for index {selectedIndex}"); }
+                else
+                {
+                    // Log if the coordinates are invalid to help debug board state issues
+                    Console.WriteLine($"[WARN] DrawSelectedOverlay: Invalid board coordinates (Y={selectedMove.yPos}, X={selectedMove.xPos}) for index {selectedIndex}. Cannot draw overlay.");
+                    // Optionally clear the overlay if the coordinates are bad
+                    hook.drawOverlay(new Capture.Hook.Common.Overlay { Elements = new List<Capture.Hook.Common.IOverlayElement>(), Hidden = true });
+                }
+                // --- END ADDED BOUNDARY CHECK ---
             }
-            else if (hook.hooked)
+            else if (hook.hooked) // If hooked but results are invalid/empty or index is bad
             {
-                hook.drawOverlay(new Capture.Hook.Common.Overlay { Elements = new List<Capture.Hook.Common.IOverlayElement>(), Hidden = true }); // Clear overlay
-                Console.WriteLine($"DrawSelectedOverlay: Clearing overlay.");
+                // Clear the overlay if there's nothing valid to show
+                hook.drawOverlay(new Capture.Hook.Common.Overlay { Elements = new List<Capture.Hook.Common.IOverlayElement>(), Hidden = true });
+                Console.WriteLine($"DrawSelectedOverlay: Clearing overlay (invalid index or no results). Index: {selectedIndex}, Results Count: {(results?.Count ?? -1)}");
             }
-            // --- END OPTIONAL ---
         }
 
         // OnClosed remains the same
@@ -362,6 +386,13 @@ namespace Match3Solver
                 selectedIndex = -1; // No item to select
                 resultListView.IsEnabled = false;
                 Console.WriteLine("updateResultView: No results to display.");
+                // --- ADDED: Clear overlay when there are no results ---
+                if (hook.hooked)
+                {
+                    hook.drawOverlay(new Capture.Hook.Common.Overlay { Elements = new List<Capture.Hook.Common.IOverlayElement>(), Hidden = true });
+                    Console.WriteLine("updateResultView: Clearing overlay (no results).");
+                }
+                // --- END ADDED ---
                 return; // Nothing more to do
             }
 
@@ -382,14 +413,23 @@ namespace Match3Solver
                 resultListView.IsEnabled = true;       // Enable the list for interaction
                 Console.WriteLine($"updateResultView: Selected and scrolled to index 0.");
 
-                // --- CRITICAL: REMOVE or COMMENT OUT the automatic overlay call for the best move ---
-                // hook.drawOverlay(draw.parseMovementAndDraw(results[0], board[results[0].yPos][results[0].xPos], h, w));
-                // Console.WriteLine($"updateResultView: Skipped automatic overlay draw for Option 1."); // Optional log
+                // --- ADD THIS LINE ---
+                // After selecting index 0, immediately draw the overlay for it.
+                DrawSelectedOverlay();
+                Console.WriteLine($"updateResultView: Called DrawSelectedOverlay for index 0 immediately after update.");
+                // --- END ADDED LINE ---
             }
             else // Should not happen due to earlier check, but good practice
             {
                 selectedIndex = -1;
                 resultListView.IsEnabled = false;
+                // --- ADDED: Clear overlay when there are no results after sort ---
+                if (hook.hooked)
+                {
+                    hook.drawOverlay(new Capture.Hook.Common.Overlay { Elements = new List<Capture.Hook.Common.IOverlayElement>(), Hidden = true });
+                    Console.WriteLine("updateResultView: Clearing overlay (results became empty).");
+                }
+                // --- END ADDED ---
                 Console.WriteLine("updateResultView: Results list became empty after processing.");
             }
         }
