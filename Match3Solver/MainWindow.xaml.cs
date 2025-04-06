@@ -48,7 +48,7 @@ namespace Match3Solver
         private const int HOTKEY_ID = 9000;
         private const uint MOD_NONE = 0x0000, MOD_ALT = 0x0001, MOD_CONTROL = 0x0002, MOD_SHIFT = 0x0004, MOD_WIN = 0x0008;
         // Define Keys (VK_MINUS is not needed for HP1 default controls)
-        private const uint VK_I = 0x49, VK_C = 0x43, VK_0 = 0x30, VK_1 = 0x31, VK_2 = 0x32, VK_3 = 0x33, VK_4 = 0x34, VK_5 = 0x35, VK_6 = 0x36, VK_7 = 0x37, VK_8 = 0x38, VK_9 = 0x39, VK_PLUS = 0xBB, /*VK_MINUS = 0xBD,*/ VK_UP = 0x26, VK_DOWN = 0x28, VK_O = 0x4F;
+        private const uint VK_I = 0x49, VK_OEM_3 = 0xC0, VK_0 = 0x30, VK_1 = 0x31, VK_2 = 0x32, VK_3 = 0x33, VK_4 = 0x34, VK_5 = 0x35, VK_6 = 0x36, VK_7 = 0x37, VK_8 = 0x38, VK_9 = 0x39, VK_PLUS = 0xBB, /*VK_MINUS = 0xBD,*/ VK_UP = 0x26, VK_DOWN = 0x28, VK_O = 0x4F;
 
         private IntPtr _windowHandle;
         private HwndSource _source;
@@ -140,7 +140,7 @@ namespace Match3Solver
         public static void SendReportSilently(Exception ex, string msg = "") { _reportCrash.DeveloperMessage = msg; _reportCrash.Silent = true; _reportCrash.Send(ex); }
 
         // OnSourceInitialized - Register hotkeys (Remove VK_MINUS)
-        protected override void OnSourceInitialized(EventArgs e) { base.OnSourceInitialized(e); _windowHandle = new WindowInteropHelper(this).Handle; _source = HwndSource.FromHwnd(_windowHandle); _source.AddHook(HwndHook); string err = ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_I) ? "I," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_C) ? "C," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_1) ? "1," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_2) ? "2," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_3) ? "3," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_4) ? "4," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_5) ? "5," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_6) ? "6," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_7) ? "7," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_8) ? "8," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_9) ? "9," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_0) ? "0," : ""; /*VK_MINUS removed*/ err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_PLUS) ? "+," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_UP) ? "UP," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_DOWN) ? "DOWN," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_O) ? "O," : ""; if (!err.Equals("")) MessageBox.Show("Cannot Bind: " + err.Trim(','), "BIND ERROR"); }
+        protected override void OnSourceInitialized(EventArgs e) { base.OnSourceInitialized(e); _windowHandle = new WindowInteropHelper(this).Handle; _source = HwndSource.FromHwnd(_windowHandle); _source.AddHook(HwndHook); string err = ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_I) ? "I," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_NONE, VK_OEM_3) ? "`," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_1) ? "1," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_2) ? "2," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_3) ? "3," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_4) ? "4," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_5) ? "5," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_6) ? "6," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_7) ? "7," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_8) ? "8," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_9) ? "9," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_0) ? "0," : ""; /*VK_MINUS removed*/ err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_PLUS) ? "+," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_UP) ? "UP," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_DOWN) ? "DOWN," : ""; err += !RegisterHotKey(_windowHandle, HOTKEY_ID, MOD_CONTROL | MOD_ALT, VK_O) ? "O," : ""; if (!err.Equals("")) MessageBox.Show("Cannot Bind: " + err.Trim(','), "BIND ERROR"); }
 
 
         // HwndHook - Handle hotkey presses
@@ -221,7 +221,7 @@ namespace Match3Solver
                         { IsBackground = true }.Start();
                         break;
 
-                    case VK_C: // Capture and Parse (Solving Disabled for now)
+                    case VK_OEM_3: // Capture and Parse (Solving Disabled for now)
                         bool canCapture = false;
                         if (hook.hooked && hook.processId != 0)
                         {

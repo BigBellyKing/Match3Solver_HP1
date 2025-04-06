@@ -53,86 +53,100 @@ namespace Match3Solver
         }
 
         // --- Keep URIImage2Stream (might be needed if other image resources are used later) ---
-        private MemoryStream URIImage2Stream(Uri path)
-        {
-            try
-            {
-                var bitmapImage = new BitmapImage(path);
-                var encoder = new PngBitmapEncoder();
-                encoder.Frames.Add(BitmapFrame.Create(bitmapImage));
-                var stream = new MemoryStream();
-                encoder.Save(stream);
-                stream.Flush();
-                return stream;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[ERROR] Converting URI {path} to stream failed: {ex.Message}");
-                return null;
-            }
-        }
+        private MemoryStream URIImage2Stream(Uri path) { try { var bitmapImage = new BitmapImage(path); var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmapImage)); var stream = new MemoryStream(); encoder.Save(stream); stream.Flush(); return stream; } catch (Exception ex) { Console.WriteLine($"[ERROR] Converting URI {path} to stream failed: {ex.Message}"); return null; } }
+        public SDColor MediaColorToDrawingColor(SWMedia.Color mediaColor) { return SDColor.FromArgb(mediaColor.A, mediaColor.R, mediaColor.G, mediaColor.B); }
 
-        // --- Keep MediaColorToDrawingColor ---
-        public SDColor MediaColorToDrawingColor(SWMedia.Color mediaColor)
-        {
-            return SDColor.FromArgb(mediaColor.A, mediaColor.R, mediaColor.G, mediaColor.B);
-        }
-
-        // --- Text-Based parseMovementAndDraw Method ---
+        // --- Text-Based parseMovementAndDraw Method with Start and End Markers ---
         public Capture.Hook.Common.Overlay parseMovementAndDraw(SolverInterface.Movement command, int cellColorIndex, int screenHeight, int screenWidth)
         {
             var culture = CultureInfo.InvariantCulture;
-            Console.WriteLine($"--- parseMovementAndDraw START (Text Overlay) ---");
+            Console.WriteLine($"--- parseMovementAndDraw START (Text Overlay - Start & End) ---");
             Console.WriteLine($"Input: Move=[{command.yPos},{command.xPos}] {(command.isVertical ? "V" : "H")} Amt={command.amount}, TileIdx={cellColorIndex}, Screen={screenWidth}x{screenHeight}");
 
             List<Capture.Hook.Common.IOverlayElement> elements = new List<Capture.Hook.Common.IOverlayElement>();
 
             // 1. Calculate Scaling Factor
             float scale = (float)screenWidth / ASSET_BASE_WIDTH;
-            Console.WriteLine($"Scale factor: {scale.ToString(culture)} (screenWidth={screenWidth} / baseWidth={ASSET_BASE_WIDTH})");
 
-            // 2. Calculate Position of the STARTING tile's center in screen coordinates
-            int baseX = TILE_CENTER_START_X + (command.xPos * TILE_OFFSET_X);
-            int baseY = TILE_CENTER_START_Y + (command.yPos * TILE_OFFSET_Y);
-            int screenX = (int)(baseX * scale);
-            int screenY = (int)(baseY * scale);
-            Console.WriteLine($"Base Center Pos ({baseX},{baseY}) -> Scaled Center Pos ({screenX},{screenY})");
+            // 2. Calculate Position for the STARTING tile marker
+            int startBaseX = TILE_CENTER_START_X + (command.xPos * TILE_OFFSET_X);
+            int startBaseY = TILE_CENTER_START_Y + (command.yPos * TILE_OFFSET_Y);
+            int startScreenX = (int)(startBaseX * scale);
+            int startScreenY = (int)(startBaseY * scale);
+            int startTextPosX = startScreenX - 18; // Adjust for centering
+            int startTextPosY = startScreenY - 12; // Adjust for centering
 
-            int textPosX = screenX - 18;
-            int textPosY = screenY - 12;
-
-            // 3. Format the Text String
+            // 3. Format the Text String for the STARTING tile
             string directionSymbol;
-            if (command.isVertical)
+            if (command.isVertical) { directionSymbol = command.amount > 0 ? "v" : "^"; }
+            else { directionSymbol = command.amount > 0 ? ">" : "<"; }
+            string startMoveText = $"[{command.yPos},{command.xPos}] {directionSymbol}{Math.Abs(command.amount)}";
+
+            // 4. Define Font and Color for STARTING marker
+            SDFont startFont = new SDFont("Arial", 18.0f, SDFontStyle.Bold);
+            SDColor startTextColor = SDColor.Black; // Keep black for start
+
+            // 5. Create STARTING TextElement
+            var startTextElement = new OverlayTextElement(startFont)
             {
-                directionSymbol = command.amount > 0 ? "v" : "^";
+                Location = new SDPoint(startTextPosX, startTextPosY),
+                Text = startMoveText,
+                Color = startTextColor,
+                AntiAliased = true
+            };
+            elements.Add(startTextElement); // Add start marker first
+            Console.WriteLine($"Added Start Marker: \"{startMoveText}\" at ({startTextPosX},{startTextPosY})");
+
+            // --- ADD LOGIC FOR END MARKER ---
+
+            // 6. Calculate END tile coordinates
+            int endY = command.yPos + (command.isVertical ? command.amount : 0);
+            int endX = command.xPos + (command.isVertical ? 0 : command.amount);
+
+            // 7. Check if END coordinates are within board bounds
+            bool isEndValid = false;
+            if (parent != null && endY >= 0 && endY < parent.length && endX >= 0 && endX < parent.width)
+            {
+                isEndValid = true;
             }
             else
             {
-                directionSymbol = command.amount > 0 ? ">" : "<";
+                Console.WriteLine($"End position ({endY},{endX}) is outside board bounds ({parent?.length ?? -1}x{parent?.width ?? -1}). Skipping End Marker.");
             }
-            string moveText = $"[{command.yPos},{command.xPos}] {directionSymbol}{Math.Abs(command.amount)}";
-            Console.WriteLine($"Formatted Text: \"{moveText}\" at ({textPosX},{textPosY})");
 
-            // 4. Define Font and Color
-            SDFont font = new SDFont("Arial", 18.0f, SDFontStyle.Bold);
-            SDColor textColor = SDColor.Black;
-
-            // 5. Create TextElement (Use alias or full name) - FIX LINE 147
-            var textElement = new OverlayTextElement(font) // Using the alias defined at the top
-            // Alternatively: var textElement = new Capture.Hook.Common.TextElement(font)
+            if (isEndValid)
             {
-                Location = new SDPoint(textPosX, textPosY),
-                Text = moveText,
-                Color = textColor,
-                AntiAliased = true
-            };
-            elements.Add(textElement);
+                // 8. Calculate Position for the END tile marker
+                int endBaseX = TILE_CENTER_START_X + (endX * TILE_OFFSET_X);
+                int endBaseY = TILE_CENTER_START_Y + (endY * TILE_OFFSET_Y);
+                int endScreenX = (int)(endBaseX * scale);
+                int endScreenY = (int)(endBaseY * scale);
+                // Adjust centering for "End" text (might need different offsets)
+                int endTextPosX = endScreenX - 14; // Adjust based on "End" length
+                int endTextPosY = endScreenY - 12; // Same vertical offset should be ok
+
+                // 9. Define Font and Color for END marker
+                SDFont endFont = new SDFont("Arial", 16.0f, SDFontStyle.Bold); // Slightly smaller font?
+                SDColor endTextColor = SDColor.Black; // Use a different color (e.g., Red)
+
+                // 10. Create END TextElement
+                var endTextElement = new OverlayTextElement(endFont)
+                {
+                    Location = new SDPoint(endTextPosX, endTextPosY),
+                    Text = "End", // Simple text for the end marker
+                    Color = endTextColor,
+                    AntiAliased = true
+                };
+                elements.Add(endTextElement); // Add end marker
+                Console.WriteLine($"Added End Marker: \"End\" at ({endTextPosX},{endTextPosY})");
+            }
+            // --- END LOGIC FOR END MARKER ---
+
 
             Console.WriteLine($"Total Elements Added: {elements.Count}");
             Console.WriteLine($"--- parseMovementAndDraw END ---");
 
-            // 6. Return the Overlay object containing the text element
+            // 11. Return the Overlay object containing BOTH text elements (or just start if end was invalid)
             return new Capture.Hook.Common.Overlay { Elements = elements, Hidden = false };
         }
         // --- END Text-Based parseMovementAndDraw ---
